@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traffic Flow Optimizer</title>
+  <style>
+    /* Reset and base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1, h2, h3 {
+      margin-bottom: 15px;
+      color: #222;
+    }
+    
+    /* Form styles */
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    
+    input[type="number"],
+    input[type="text"] {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 100%;
+      max-width: 200px;
+    }
+    
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+      transition: background-color 0.3s;
+    }
+    
+    button:hover {
+      background-color: #45a049;
+    }
+    
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    #emergencyButton {
+      background-color: #f44336;
+    }
+    
+    #emergencyButton:hover {
+      background-color: #d32f2f;
+    }
+    
+    #emergencyButton.active {
+      background-color: #b71c1c;
+      animation: pulse 1.5s infinite;
+    }
+    
+    /* Signal Display */
+    .signals-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    
+    .signal {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 5px;
+      width: 120px;
+      text-align: center;
+      background-color: #f9f9f9;
+    }
+    
+    .light {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      margin: 5px auto;
+      background-color: #ddd;
+      position: relative;
+    }
+    
+    .light.red {
+      background-color: #ffcdd2;
+    }
+    
+    .light.yellow {
+      background-color: #ffecb3;
+    }
+    
+    .light.green {
+      background-color: #c8e6c9;
+    }
+    
+    .light.active.red {
+      background-color: #f44336;
+      box-shadow: 0 0 10px #f44336;
+    }
+    
+    .light.active.yellow {
+      background-color: #ffc107;
+      box-shadow: 0 0 10px #ffc107;
+    }
+    
+    .light.active.green {
+      background-color: #4CAF50;
+      box-shadow: 0 0 10px #4CAF50;
+    }
+    
+    .timer {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    
+    /* Results Display */
+    .results {
+      margin: 30px 0;
+    }
+    
+    .road-results {
+      margin-bottom: 30px;
+    }
+    
+    .vehicle-count {
+      margin: 5px 0;
+    }
+    
+    /* File Upload */
+    .file-input {
+      margin-bottom: 10px;
+    }
+    
+    /* Image Preview */
+    .image-preview {
+      max-width: 200px;
+      max-height: 150px;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+      display: none;
+    }
+    
+    /* Emergency Mode */
+    .emergency-mode .light.red.active {
+      animation: blink 0.5s infinite;
+    }
+    
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(183, 28, 28, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(183, 28, 28, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(183, 28, 28, 0); }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .signals-container {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Traffic Flow Optimizer</h1>
+  
+  <div class="signals-container">
+    <div class="signal" id="signalA">
+      <h3>Signal A</h3>
+      <div class="light red active"></div>
+      <div class="light yellow"></div>
+      <div class="light green"></div>
+      <div class="timer" id="timerA"></div>
+    </div>
+    <div class="signal" id="signalB">
+      <h3>Signal B</h3>
+      <div class="light red active"></div>
+      <div class="light yellow"></div>
+      <div class="light green"></div>
+      <div class="timer" id="timerB"></div>
+    </div>
+    <div class="signal" id="signalC">
+      <h3>Signal C</h3>
+      <div class="light red active"></div>
+      <div class="light yellow"></div>
+      <div class="light green"></div>
+      <div class="timer" id="timerC"></div>
+    </div>
+    <div class="signal" id="signalD">
+      <h3>Signal D</h3>
+      <div class="light red active"></div>
+      <div class="light yellow"></div>
+      <div class="light green"></div>
+      <div class="timer" id="timerD"></div>
+    </div>
+  </div>
+  
+  <h2>Upload Traffic Images</h2>
+  
+  <div class="form-group">
+    <label for="densityFactor">Vehicle Density Factor:</label>
+    <input type="number" id="densityFactor" value="1.0" step="0.1" min="0.1" max="3.0">
+  </div>
+  
+  <div class="form-group">
+    <label for="avgPassTime">Average Pass Time (seconds):</label>
+    <input type="number" id="avgPassTime" value="2" step="0.5" min="0.5" max="10">
+  </div>
+  
+  <div class="form-group">
+    <label for="imageA">Road A Image:</label>
+    <input type="file" id="imageA" class="file-input" accept="image/*">
+    <img id="previewA" class="image-preview" alt="Road A Preview">
+  </div>
+  
+  <div class="form-group">
+    <label for="imageB">Road B Image:</label>
+    <input type="file" id="imageB" class="file-input" accept="image/*">
+    <img id="previewB" class="image-preview" alt="Road B Preview">
+  </div>
+  
+  <div class="form-group">
+    <label for="imageC">Road C Image:</label>
+    <input type="file" id="imageC" class="file-input" accept="image/*">
+    <img id="previewC" class="image-preview" alt="Road C Preview">
+  </div>
+  
+  <div class="form-group">
+    <label for="imageD">Road D Image:</label>
+    <input type="file" id="imageD" class="file-input" accept="image/*">
+    <img id="previewD" class="image-preview" alt="Road D Preview">
+  </div>
+  
+  <div class="form-actions">
+    <button id="startButton">Start Traffic Simulation</button>
+    <button id="emergencyButton">Emergency Override</button>
+  </div>
+  
+  <h2>Traffic Results</h2>
+  
+  <div class="results">
+    <div class="road-results" id="resultsA">
+      <h3>Road A</h3>
+      <div class="vehicle-count">Cars: <span id="carsA">0</span></div>
+      <div class="vehicle-count">Buses: <span id="busesA">0</span></div>
+      <div class="vehicle-count">Bikes: <span id="bikesA">0</span></div>
+      <div class="vehicle-count">Trucks: <span id="trucksA">0</span></div>
+      <div class="vehicle-count">Total: <span id="totalA">0</span></div>
+      <div class="vehicle-count">GST: <span id="gstA">0</span> sec</div>
+    </div>
+    
+    <div class="road-results" id="resultsB">
+      <h3>Road B</h3>
+      <div class="vehicle-count">Cars: <span id="carsB">0</span></div>
+      <div class="vehicle-count">Buses: <span id="busesB">0</span></div>
+      <div class="vehicle-count">Bikes: <span id="bikesB">0</span></div>
+      <div class="vehicle-count">Trucks: <span id="trucksB">0</span></div>
+      <div class="vehicle-count">Total: <span id="totalB">0</span></div>
+      <div class="vehicle-count">GST: <span id="gstB">0</span> sec</div>
+    </div>
+    
+    <div class="road-results" id="resultsC">
+      <h3>Road C</h3>
+      <div class="vehicle-count">Cars: <span id="carsC">0</span></div>
+      <div class="vehicle-count">Buses: <span id="busesC">0</span></div>
+      <div class="vehicle-count">Bikes: <span id="bikesC">0</span></div>
+      <div class="vehicle-count">Trucks: <span id="trucksC">0</span></div>
+      <div class="vehicle-count">Total: <span id="totalC">0</span></div>
+      <div class="vehicle-count">GST: <span id="gstC">0</span> sec</div>
+    </div>
+    
+    <div class="road-results" id="resultsD">
+      <h3>Road D</h3>
+      <div class="vehicle-count">Cars: <span id="carsD">0</span></div>
+      <div class="vehicle-count">Buses: <span id="busesD">0</span></div>
+      <div class="vehicle-count">Bikes: <span id="bikesD">0</span></div>
+      <div class="vehicle-count">Trucks: <span id="trucksD">0</span></div>
+      <div class="vehicle-count">Total: <span id="totalD">0</span></div>
+      <div class="vehicle-count">GST: <span id="gstD">0</span> sec</div>
+    </div>
+  </div>
+
+  <script>
+    // Combined JavaScript for traffic.js and emergency.js
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM Elements
+        const startButton = document.getElementById('startButton');
+        const emergencyButton = document.getElementById('emergencyButton');
+        const densityFactor = document.getElementById('densityFactor');
+        const avgPassTime = document.getElementById('avgPassTime');
+        
+        // File inputs and image previews
+        const roads = ['A', 'B', 'C', 'D'];
+        let simulationRunning = false;
+        let simulationInterval;
+        
+        // Emergency mode variables
+        let emergencyMode = false;
+        let emergencyInterval;
+        
+        // Traffic simulation variables
+        let currentRoad = null;
+        let timeRemaining = 0;
+        
+        // Setup image previews
+        function setupImagePreviews() {
+            roads.forEach(road => {
+                const fileInput = document.getElementById(`image${road}`);
+                const preview = document.getElementById(`preview${road}`);
+                
+                fileInput.addEventListener('change', function() {
+                    if (fileInput.files && fileInput.files[0]) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            preview.src = e.target.result;
+                            preview.style.display = 'block';
+                        };
+                        
+                        reader.readAsDataURL(fileInput.files[0]);
+                    }
+                });
+            });
+        }
+        
+        // Simulated vehicle detection (normally done by backend)
+        function simulateVehicleDetection(roadId) {
+            // Generate random vehicle counts for demonstration
+            return {
+                'cars': Math.floor(Math.random() * 10),
+                'buses': Math.floor(Math.random() * 3),
+                'bikes': Math.floor(Math.random() * 5),
+                'trucks': Math.floor(Math.random() * 2),
+                'motorcycles': Math.floor(Math.random() * 4)
+            };
+        }
+        
+        // Calculate green signal time (simulated algorithm)
+        function calculateGST(vehicles, factor, passTime) {
+            // Basic formula: normalize by factor and average pass time
+            const totalVehicles = Object.values(vehicles).reduce((a, b) => a + b, 0);
+            const base = Math.ceil((totalVehicles + 5) / 5);
+            const time = Math.ceil(base * parseFloat(factor) * parseFloat(passTime));
+            
+            // Clamp between 5 and 60 seconds
+            return Math.min(Math.max(time, 5), 60);
+        }
+        
+        // Update the UI with detected vehicles
+        function updateVehicleDisplay(roadId, vehicles) {
+            const total = Object.values(vehicles).reduce((a, b) => a + b, 0);
+            
+            document.getElementById(`cars${roadId}`).textContent = vehicles.cars;
+            document.getElementById(`buses${roadId}`).textContent = vehicles.buses;
+            document.getElementById(`bikes${roadId}`).textContent = vehicles.bikes;
+            document.getElementById(`trucks${roadId}`).textContent = vehicles.trucks;
+            document.getElementById(`total${roadId}`).textContent = total;
+        }
+        
+        // Traffic light control
+        function setSignalLights(roadId, state) {
+            const signal = document.getElementById(`signal${roadId}`);
+            const redLight = signal.querySelector('.light.red');
+            const yellowLight = signal.querySelector('.light.yellow');
+            const greenLight = signal.querySelector('.light.green');
+            
+            // Reset all lights
+            redLight.classList.remove('active');
+            yellowLight.classList.remove('active');
+            greenLight.classList.remove('active');
+            
+            // Set appropriate light
+            if (state === 'red') {
+                redLight.classList.add('active');
+            } else if (state === 'yellow') {
+                yellowLight.classList.add('active');
+            } else if (state === 'green') {
+                greenLight.classList.add('active');
+            }
+        }
+        
+        // Update timer display
+        function updateTimer(roadId, time) {
+            const timerElement = document.getElementById(`timer${roadId}`);
+            timerElement.textContent = time > 0 ? `${time}s` : '';
+        }
+        
+        // Traffic simulation function
+        function startSimulation() {
+            if (simulationRunning) return;
+            
+            simulationRunning = true;
+            startButton.disabled = true;
+            
+            // Process each road
+            const roadData = {};
+            
+            // Simulated processing (normally would send to server)
+            roads.forEach(road => {
+                // Get density factor and pass time
+                const factor = parseFloat(densityFactor.value);
+                const passTime = parseFloat(avgPassTime.value);
+                
+                // Simulate vehicle detection
+                const vehicles = simulateVehicleDetection(road);
+                const gst = calculateGST(vehicles, factor, passTime);
+                
+                // Update the display
+                updateVehicleDisplay(road, vehicles);
+                document.getElementById(`gst${road}`).textContent = gst;
+                
+                // Store for simulation
+                roadData[road] = {
+                    vehicles: vehicles,
+                    gst: gst
+                };
+                
+                // Set all signals to red initially
+                setSignalLights(road, 'red');
+                updateTimer(road, 0);
+            });
+            
+            // Start the traffic light sequence
+            let roadIndex = 0;
+            currentRoad = roads[roadIndex];
+            timeRemaining = roadData[currentRoad].gst;
+            
+            // Set initial green for first road
+            setSignalLights(currentRoad, 'green');
+            updateTimer(currentRoad, timeRemaining);
+            
+            // Run the simulation
+            simulationInterval = setInterval(() => {
+                if (timeRemaining > 0) {
+                    // Count down current green time
+                    timeRemaining--;
+                    updateTimer(currentRoad, timeRemaining);
+                } else {
+                    // Change to yellow for 3 seconds
+                    setSignalLights(currentRoad, 'yellow');
+                    updateTimer(currentRoad, 3);
+                    
+                    // After 3 seconds, switch to next road
+                    setTimeout(() => {
+                        // Set current road to red
+                        setSignalLights(currentRoad, 'red');
+                        updateTimer(currentRoad, 0);
+                        
+                        // Get next road
+                        roadIndex = (roadIndex + 1) % roads.length;
+                        currentRoad = roads[roadIndex];
+                        timeRemaining = roadData[currentRoad].gst;
+                        
+                        // Set new road to green
+                        setSignalLights(currentRoad, 'green');
+                        updateTimer(currentRoad, timeRemaining);
+                    }, 3000);
+                    
+                    // Skip the interval during yellow light
+                    clearInterval(simulationInterval);
+                    
+                    // Resume after yellow light period
+                    setTimeout(() => {
+                        if (simulationRunning) {
+                            simulationInterval = setInterval(arguments.callee, 1000);
+                        }
+                    }, 3000);
+                }
+            }, 1000);
+        }
+        
+        // Stop simulation
+        function stopSimulation() {
+            if (!simulationRunning) return;
+            
+            clearInterval(simulationInterval);
+            simulationRunning = false;
+            startButton.disabled = false;
+            
+            // Reset all signals to red
+            roads.forEach(road => {
+                setSignalLights(road, 'red');
+                updateTimer(road, 0);
+            });
+        }
+        
+        // Function to handle emergency mode activation
+        function activateEmergencyMode() {
+            // Stop any ongoing simulation
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+                simulationRunning = false;
+            }
+            
+            emergencyMode = true;
+            emergencyButton.textContent = 'Cancel Emergency';
+            emergencyButton.classList.add('active');
+            
+            // Get all signals
+            
+            // Make all signals flash red
+            emergencyInterval = setInterval(() => {
+                roads.forEach(road => {
+                    const signal = document.getElementById(`signal${road}`);
+                    const redLight = signal.querySelector('.light.red');
+                    
+                    redLight.classList.toggle('active');
+                });
+            }, 500); // Flash every 500ms
+            
+            // Add emergency class to body for global styling
+            document.body.classList.add('emergency-mode');
+        }
+        
+        // Function to deactivate emergency mode
+        function deactivateEmergencyMode() {
+            emergencyMode = false;
+            emergencyButton.textContent = 'Emergency Override';
+            emergencyButton.classList.remove('active');
+            
+            // Stop flashing
+            clearInterval(emergencyInterval);
+            
+            // Reset all signals to red (non-flashing)
+            roads.forEach(road => {
+                const signal = document.getElementById(`signal${road}`);
+                const redLight = signal.querySelector('.light.red');
+                
+                // Ensure red light is on steadily
+                redLight.classList.add('active');
+                
+                // Clear any countdown timers
+                const timerElement = document.getElementById(`timer${road}`);
+                timerElement.textContent = '';
+            });
+            
+            // Remove emergency class from body
+            document.body.classList.remove('emergency-mode');
+            
+            // Re-enable start button
+            startButton.disabled = false;
+        }
+        
+        // Event listeners
+        startButton.addEventListener('click', startSimulation);
+        
+        emergencyButton.addEventListener('click', function() {
+            if (emergencyMode) {
+                deactivateEmergencyMode();
+            } else {
+                activateEmergencyMode();
+            }
+        });
+        
+        // Initialize image previews
+        setupImagePreviews();
+        
+        // Handle page unload
+        window.addEventListener('beforeunload', function() {
+            if (simulationRunning) {
+                stopSimulation();
+            }
+            if (emergencyMode) {
+                clearInterval(emergencyInterval);
+            }
+        });
+    });
+  </script>
+</body>
+</html>

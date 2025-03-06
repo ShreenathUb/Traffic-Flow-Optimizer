@@ -1,0 +1,10 @@
+Flask==2.3.3
+Werkzeug==2.3.7
+Flask-Uploads==0.2.1
+opencv-python==4.8.0
+cvlib==0.2.7
+tensorflow==2.14.0
+numpy==1.24.3
+pandas==2.1.0
+pillow==10.0.0
+flask-cors==4.0.0
